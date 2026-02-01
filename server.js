@@ -6,6 +6,9 @@ const fs = require('fs');
 // Use node-fetch for compatibility (works with all Node versions)
 const fetch = require('node-fetch');
 
+// Import OpenAI
+const OpenAI = require('openai');
+
 // Load .env file from src/environments/.env
 const envPath = path.join(__dirname, 'src/environments/.env');
 if (fs.existsSync(envPath)) {
@@ -22,6 +25,116 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Initialize OpenAI with API key from .env
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+  console.log('OpenAI initialized successfully');
+} else {
+  console.warn('Warning: OPENAI_API_KEY not found in .env');
+}
+
+// Generate report endpoint
+app.post('/api/generate-report', async (req, res) => {
+  try {
+    const { name, companyName, userInput } = req.body;
+
+    if (!name || !companyName || !userInput) {
+      return res.status(400).json({ error: 'Missing required fields: name, companyName, userInput' });
+    }
+
+    if (!openai) {
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
+    }
+
+    const prompt = `Create a comprehensive business report for ${name} from ${companyName}. 
+    
+Based on the following information provided by the user:
+${userInput}
+
+Please create a professional business report that includes:
+1. Executive Summary
+2. Business Analysis
+3. Recommendations
+4. Strategic Insights
+5. Action Items
+
+Make it detailed, professional, and tailored to their specific business needs.`;
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional business analyst who creates comprehensive, insightful business reports.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7
+      });
+
+      const reportContent = completion.choices[0]?.message?.content || 'Report generation failed.';
+      
+      res.json({ 
+        success: true, 
+        report: reportContent 
+      });
+    } catch (openaiError) {
+      console.error('OpenAI API Error:', openaiError);
+      
+      // Generate fallback report
+      const fallbackReport = `
+BUSINESS REPORT
+
+Prepared for: ${name}
+Company: ${companyName}
+Date: ${new Date().toLocaleDateString()}
+
+EXECUTIVE SUMMARY
+This report has been prepared based on the information provided: ${userInput}
+
+BUSINESS ANALYSIS
+Based on the details provided, we recommend conducting a thorough analysis of your business operations, market position, and growth opportunities.
+
+RECOMMENDATIONS
+1. Review current business processes
+2. Identify areas for improvement
+3. Develop strategic initiatives
+4. Monitor key performance indicators
+
+STRATEGIC INSIGHTS
+Consider leveraging technology and data analytics to drive business growth and improve operational efficiency.
+
+ACTION ITEMS
+- Schedule a follow-up consultation
+- Review and implement recommendations
+- Track progress and adjust strategies as needed
+
+Thank you for using our business report service.
+      `;
+      
+      res.json({ 
+        success: true, 
+        report: fallbackReport,
+        note: 'Fallback report generated due to API error'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating report:', error);
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      message: error.message
+    });
+  }
+});
 
 // Email sending endpoint
 app.post('/api/send-email', async (req, res) => {
@@ -180,21 +293,6 @@ app.get('/api/health', (req, res) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`\n❌ Port ${PORT} is already in use!`);
-    console.error(`\nPlease do one of the following:`);
-    console.error(`1. Stop the process using port ${PORT}:`);
-    console.error(`   Windows: netstat -ano | findstr :${PORT}`);
-    console.error(`   Then: taskkill /PID <PID> /F`);
-    console.error(`\n2. Or change the PORT in your .env file or environment variables\n`);
-    process.exit(1);
-  } else {
-    console.error('Server error:', error);
-    process.exit(1);
-  }
 });
 
 server.on('error', (error) => {

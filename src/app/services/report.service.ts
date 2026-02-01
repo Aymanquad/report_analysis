@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import OpenAI from 'openai';
 import { jsPDF } from 'jspdf';
 import { environment } from '../../environments/environment';
 
@@ -7,14 +6,8 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class ReportService {
-  private openai: OpenAI;
-
   constructor() {
-    // Initialize OpenAI with API key from environment
-    this.openai = new OpenAI({
-      apiKey: environment.openaiApiKey,
-      dangerouslyAllowBrowser: true // Only for client-side usage
-    });
+    // All API calls are now handled by the backend server
   }
 
   async generateAndSendReport(userData: {
@@ -44,40 +37,47 @@ export class ReportService {
     companyName: string;
     userInput: string;
   }): Promise<string> {
-    const prompt = `Create a comprehensive business report for ${userData.name} from ${userData.companyName}. 
-    
-Based on the following information provided by the user:
-${userData.userInput}
-
-Please create a professional business report that includes:
-1. Executive Summary
-2. Business Analysis
-3. Recommendations
-4. Strategic Insights
-5. Action Items
-
-Make it detailed, professional, and tailored to their specific business needs.`;
-
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional business analyst who creates comprehensive, insightful business reports.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 2000,
-        temperature: 0.7
+      // Call backend API to generate report (OpenAI is handled on backend)
+      const backendUrl = `${environment.apiUrl}/api/generate-report`;
+      
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: userData.name,
+          companyName: userData.companyName,
+          userInput: userData.userInput
+        })
+      }).catch((fetchError) => {
+        // Handle network errors
+        if (fetchError.message.includes('Failed to fetch') || 
+            fetchError.message.includes('ERR_CONNECTION_REFUSED') ||
+            fetchError.name === 'TypeError') {
+          throw new Error('BACKEND_NOT_RUNNING');
+        }
+        throw fetchError;
       });
 
-      return completion.choices[0]?.message?.content || 'Report generation failed.';
-    } catch (error) {
-      console.error('OpenAI API Error:', error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(`Failed to generate report: ${errorData.error || errorData.message || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      return result.report || this.generateFallbackReport(userData);
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      
+      // Check if it's a connection error
+      if (error.message === 'BACKEND_NOT_RUNNING' || 
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('ERR_CONNECTION_REFUSED')) {
+        throw new Error('BACKEND_NOT_RUNNING');
+      }
+      
       // Fallback report if API fails
       return this.generateFallbackReport(userData);
     }
@@ -263,9 +263,7 @@ Thank you for using our business report service.
         body: JSON.stringify({
           email: email,
           name: name,
-          pdfBase64: pdfBase64,
-          fromEmail: environment.mailjetFromEmail,
-          fromName: environment.mailjetFromName
+          pdfBase64: pdfBase64
         })
       }).catch((fetchError) => {
         // Handle network errors (connection refused, etc.)
