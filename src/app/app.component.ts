@@ -13,6 +13,8 @@ import { UserDetailsModalComponent } from './components/user-details-modal/user-
 export class AppComponent {
   userInput: string = '';
   showModal: boolean = false;
+  showSuccess: boolean = false;
+  successEmail: string = '';
 
   onInputEntered() {
     if (this.userInput.trim()) {
@@ -22,15 +24,19 @@ export class AppComponent {
 
   onModalClose() {
     this.showModal = false;
+    this.showSuccess = false;
   }
 
   onModalSubmit(userData: any) {
-    // Don't close modal immediately - let it handle its own success notification
-    // The modal will close itself after showing success (6 seconds + delay)
-    // Give extra time to ensure success notification is fully displayed
+    // Show success notification at app level
+    this.showSuccess = true;
+    this.successEmail = userData.email;
+    this.showModal = false;
+    
+    // Keep success visible for 6 seconds
     setTimeout(() => {
-      this.showModal = false;
-    }, 8000); // Wait for success notification to show for full 6 seconds + buffer
+      this.showSuccess = false;
+    }, 6000);
   }
 }
 

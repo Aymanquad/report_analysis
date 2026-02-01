@@ -113,16 +113,9 @@ export class UserDetailsModalComponent {
       // Force change detection to show success overlay
       this.cdr.detectChanges();
       
-      // Keep success visible for 6 seconds, then close
-      setTimeout(() => {
-        console.log('Closing success notification after 6 seconds');
-        this.showSuccess = false;
-        this.cdr.detectChanges();
-        // Close modal after showing success
-        setTimeout(() => {
-          this.submit.emit(userData);
-        }, 300);
-      }, 6000);
+      // Immediately emit success to parent - parent will show success notification
+      // Don't wait - let parent handle the success display
+      this.submit.emit(userData);
     } catch (error: any) {
       console.error('Error generating report:', error);
       this.isSubmitting = false;
