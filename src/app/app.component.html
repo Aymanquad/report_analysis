@@ -1,0 +1,25 @@
+<div class="container">
+  <div class="card">
+    <h1 class="title">Get your AI report for Business</h1>
+    <div class="input-container">
+      <textarea
+        [(ngModel)]="userInput"
+        class="text-input"
+        placeholder="Enter your business details or requirements here..."
+        rows="8"
+        (keydown.enter)="onInputEntered()"
+      ></textarea>
+      <button class="submit-btn" (click)="onInputEntered()">
+        Generate Report
+      </button>
+    </div>
+  </div>
+
+  <app-user-details-modal
+    *ngIf="showModal"
+    [userInput]="userInput"
+    (close)="onModalClose()"
+    (submit)="onModalSubmit($event)"
+  ></app-user-details-modal>
+</div>
+

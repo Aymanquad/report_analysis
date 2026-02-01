@@ -1,0 +1,112 @@
+<div class="modal-overlay" (click)="onCancel()" *ngIf="!isSubmitting">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2 class="modal-title">Enter Your Details</h2>
+    
+    <form (ngSubmit)="onSubmit()" class="form">
+      <div class="form-group">
+        <label for="name">Name *</label>
+        <input
+          type="text"
+          id="name"
+          [(ngModel)]="name"
+          name="name"
+          class="form-input"
+          placeholder="Enter your name"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email *</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="email"
+          name="email"
+          class="form-input"
+          placeholder="Enter your email"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number *</label>
+        <input
+          type="tel"
+          id="phone"
+          [(ngModel)]="phone"
+          name="phone"
+          class="form-input"
+          placeholder="Enter your phone number"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="company">Company Name *</label>
+        <input
+          type="text"
+          id="company"
+          [(ngModel)]="companyName"
+          name="companyName"
+          class="form-input"
+          placeholder="Enter your company name"
+          required
+        />
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn btn-cancel" (click)="onCancel()" [disabled]="isSubmitting">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-submit" [disabled]="isSubmitting">
+          <span *ngIf="!isSubmitting">Submit</span>
+          <span *ngIf="isSubmitting">Processing...</span>
+        </button>
+      </div>
+    </form>
+
+    <div class="error-message" *ngIf="showError">
+      <p>{{ errorMessage }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay - Always on top -->
+<div class="loading-overlay" *ngIf="isSubmitting">
+  <div class="loading-content">
+    <div class="spinner"></div>
+    <h3>Processing Your Request</h3>
+    <p class="loading-message">{{ loadingMessage }}</p>
+    <div class="loading-steps">
+      <div class="step" [class.active]="loadingMessage.includes('Generating')">
+        <span class="step-number">1</span>
+        <span class="step-text">Generating Report</span>
+      </div>
+      <div class="step" [class.active]="loadingMessage.includes('Creating PDF')">
+        <span class="step-number">2</span>
+        <span class="step-text">Creating PDF</span>
+      </div>
+      <div class="step" [class.active]="loadingMessage.includes('Sending email')">
+        <span class="step-number">3</span>
+        <span class="step-text">Sending Email</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success Overlay - Always on top -->
+<div class="success-overlay" *ngIf="showSuccess && !isSubmitting">
+  <div class="success-content">
+    <div class="success-icon">✓</div>
+    <h2>Email Sent Successfully! 📧</h2>
+    <p class="email-confirmation">Your business report has been sent to:</p>
+    <p class="email-address"><strong>{{ email }}</strong></p>
+    <div class="spam-warning">
+      <p class="warning-icon">⚠️</p>
+      <p class="warning-text"><strong>Important:</strong> Please check your <strong>spam/junk folder</strong> if you don't see the email in your inbox. The email may take a few minutes to arrive.</p>
+    </div>
+    <p class="thank-you">Thank you for using our service! 🙏</p>
+  </div>
+</div>
+
