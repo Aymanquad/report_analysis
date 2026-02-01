@@ -91,30 +91,25 @@ export class UserDetailsModalComponent {
       clearTimeout(progressTimer2);
       
       // IMPORTANT: Keep loading visible for a moment to show completion
-      // Then switch to success
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Update message to show email was sent
+      this.loadingMessage = 'Email sent successfully!';
+      this.cdr.detectChanges();
       
-      // Now show success message - loading is done
-      // First set isSubmitting to false, then showSuccess to true
+      // Keep loading visible for 1 second to show "Email sent successfully!" message
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Now hide loading and emit success to parent
       this.isSubmitting = false;
       this.loadingMessage = 'Generating your business report...';
       
       // Force change detection to hide loading
       this.cdr.detectChanges();
       
-      // Small delay to ensure loading is hidden before showing success
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Small delay to ensure smooth transition
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Now show success
-      this.showSuccess = true;
-      
-      console.log('✅ Email sent! Showing success notification. showSuccess:', this.showSuccess, 'isSubmitting:', this.isSubmitting);
-      
-      // Force change detection to show success overlay
-      this.cdr.detectChanges();
-      
-      // Immediately emit success to parent - parent will show success notification
-      // Don't wait - let parent handle the success display
+      // Emit success to parent - parent will show success notification
+      console.log('✅ Email sent! Emitting success to parent component');
       this.submit.emit(userData);
     } catch (error: any) {
       console.error('Error generating report:', error);
